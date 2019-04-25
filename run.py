@@ -1,5 +1,5 @@
 import json
-import sqlite3 as sq
+from Email import enviaEmailComAnexo
 from unicodedata import normalize
 import datetime
 import csv
@@ -108,3 +108,7 @@ with open('saida_final.csv', 'w') as f:
             writer.writerow(i)
 
 atualiza_excel(os.getcwd()+"\\"+"analise_ocomon.xlsx")
+
+destinatarios = ['alexandre.weber@zanc.com.br','juliana.gabiatti@zanc.com.br','marcelo.mesquita@zanc.com.br','evans.ghisio@zanc.com.br','nanortec@gmail.com','gbencke@gmail.com']
+for i in destinatarios:
+    enviaEmailComAnexo('joao.cecilio@zanc.com.br', i, 'Relatório Criticidade de TI', 'Segue em anexo', os.getcwd()+"\\", "analise_ocomon.xlsx")
