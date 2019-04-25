@@ -30,7 +30,7 @@ def converte_tipos(objeto):
     if isinstance(objeto,int):
         return str(objeto)
     if  isinstance(objeto, str):
-        return normalize('NFKD', objeto).encode('ASCII', 'ignore').decode('ASCII').upper()
+        return normalize('NFKD', objeto).encode('ASCII', 'ignore').decode('ASCII').upper().lstrip().rstrip()
     if isinstance(objeto, datetime.date):
         return objeto.strftime("%Y-%m-%d")
     else:
@@ -50,7 +50,7 @@ arquivo_consulta = """SELECT o.numero as numero_chamado,
        o.data_fechamento,
        o.data_atendimento,
        (select GROUP_CONCAT(p.num_pa SEPARATOR ', ') from pa_ocorrencias po join pa as p on p.id_pa = po.id_pa where po.id_ocorrencia = o.numero) as pas,
-       TIMESTAMPDIFF(second,o.data_abertura,o.data_fechamento)/60 as tempo_gasto_min,
+       REPLACE(CONVERT(TIMESTAMPDIFF(second,o.data_abertura,o.data_fechamento)/60/60/24,CHAR),'.',',') as tempo_gasto_min,
        CASE WHEN (SELECT DATABASE() FROM DUAL)='ocomon_novo' then 'POA' else 'SP' end as site
      --  ,(select assentamento from assentamentos where ocorrencia = o.numero order by numero desc limit 1) as solucao
 FROM ocorrencias as o 
@@ -89,15 +89,22 @@ resultado_poa = executar_consulta(arquivo_consulta,conexao_ocomon_poa,'mysql')
 field_names = ['numero_chamado',	'id_probema',	'problema',	'id_local',	'local',	'id_area',	'area',	'atendente',	'quem_abriu',	'data_abertura',	'data_fechamento',	'data_atendimento',	'pas',	'tempo_gasto_min',	'site','classe']
 resultado_final = resultado_sp + resultado_poa
 
+
+
 classificacoes = json.loads(open('problemas_classificados.json').read())
+classificacoes_norm = {}
+for i in classificacoes.keys():
+    classificacoes_norm[converte_tipos(i)] = classificacoes[i]
+    
 
-print(classificacoes.keys())
-
-exit()
 with open('saida_final.csv', 'w') as f:
         writer = csv.writer(f,delimiter=";")
         writer.writerow(field_names)
         for i in resultado_final:
+            try:
+                i.append(classificacoes_norm[i[2]])
+            except:
+                i.append("SEM CLASS")
             writer.writerow(i)
 
 atualiza_excel(os.getcwd()+"\\"+"analise_ocomon.xlsx")
